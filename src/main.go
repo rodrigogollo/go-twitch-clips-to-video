@@ -16,25 +16,14 @@ func init(){
 }
 
 func main() {
-	token := getToken()
-	fmt.Printf("Token Acquired: %s", token)
-	makevideo("broadcast", "jerma985", "day", 10)
-	// resp, err := http.Get("https://dummyjson.com/users")
+	token := getTwitchToken()
+	fmt.Printf("Token Acquired: %s\n", token)
 
-	// if err != nil {
-	// 	log.Fatal(err)
-	// }
+	game := getGameByName(token, "cs2")
+	fmt.Printf("Game ID: %s\n", game.ID)
 
-	// defer resp.Body.Close()
 
-	// body, err := ioutil.ReadAll(resp.Body)
-
-	// if err != nil {
-	// 	log.Fatal(err)
-	// }
-
-	// fmt.Printf(string(body))
-
+	// makevideo("broadcast", "jerma985", "day", 10)
 }
 
 func makevideo(category, name, period string, size int) {
