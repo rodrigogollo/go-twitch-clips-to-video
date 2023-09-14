@@ -8,16 +8,11 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"strconv"
+	"time"
 )
 
 func getTwitchToken() string {
-	
-	type TokenResponse struct {
-		AccessToken string `json:"access_token"`
-		ExpiresIn   int    `json:"expires_in"`
-		TokenType   string `json:"token_type"`
-	}
-
 	CLIENT_ID := os.Getenv("CLIENT_ID")
 	CLIENT_SECRET := os.Getenv("CLIENT_SECRET")
 
@@ -58,26 +53,7 @@ func getTwitchToken() string {
 	return tokenResponse.AccessToken
 }
 
-func getClipsByGame(token, name string) {
-
-	// gameData := getGameByName(token, name)
-
-
-}
-
-type GamesResponse struct {
-	Data []Game `json:"data"`
-}
-
-type Game struct {
-	ID        string `json:"id"`
-	Name      string `json:"name"`
-	BoxArtUrl string `json:"box_art_url"`
-	IGDB_ID   string `json:"igdb_id"`
-}
-
 func getGameByName(token, name string) Game {
-
 	CLIENT_ID := os.Getenv("CLIENT_ID")
 
 	baseURL, _ := url.Parse("https://api.twitch.tv/helix/games")
@@ -117,4 +93,62 @@ func getGameByName(token, name string) Game {
 	firstGame := games[0]
 
 	return firstGame
+}
+
+func getClipsByGame(token string, gameId string, first int, startedAt string, endedAt string) []Clip {
+	CLIENT_ID := os.Getenv("CLIENT_ID")
+	baseURL, _ := url.Parse("https://api.twitch.tv/helix/clips")
+	
+	startedAtDate, err := time.Parse("2006-01-02", startedAt)
+	if err != nil {
+		panic(err)
+	}
+	
+	endedAtDate, err := time.Parse("2006-01-02", endedAt)
+	if err != nil {
+			panic(err)
+	}
+
+	startDate := startedAtDate.Format("2006-01-02T15:04:05Z")
+	endDate := endedAtDate.Format("2006-01-02T15:04:05Z")
+
+	params := url.Values{}
+	params.Set("game_id", gameId)
+	params.Set("first", strconv.Itoa(first))
+	params.Set("started_at", startDate)
+	params.Set("ended_at", endDate)
+
+	baseURL.RawQuery = params.Encode()
+
+	req, err := http.NewRequest("GET", baseURL.String(), nil)
+	req.Header.Set("Authorization", fmt.Sprintf(`Bearer %s`, token))
+	req.Header.Set("Client-Id", CLIENT_ID)
+
+	if err != nil {
+		panic(err)
+	}
+
+  client := &http.Client{}
+	resp, err := client.Do(req)
+
+	if err != nil {
+		panic(err)
+	}
+
+	defer resp.Body.Close()
+
+	body, _ := io.ReadAll(resp.Body)
+
+	// fmt.Println(string(body))
+
+	var clipsResponse ClipsResponse
+	err = json.Unmarshal([]byte(body), &clipsResponse)
+
+	if err != nil {
+		panic(err)
+	}
+
+	clips := clipsResponse.Data
+	return clips
+
 }
