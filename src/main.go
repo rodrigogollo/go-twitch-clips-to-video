@@ -2,9 +2,22 @@ package main
 
 import (
 	"fmt"
+	"log"
+
+	"github.com/joho/godotenv"
 )
 
+func init(){
+	err := godotenv.Load(".env")
+
+	if err != nil {
+			log.Fatal("Error loading .env file")
+	}
+}
+
 func main() {
+	token := getToken()
+	fmt.Printf("Token Acquired: %s", token)
 	makevideo("broadcast", "jerma985", "day", 10)
 	// resp, err := http.Get("https://dummyjson.com/users")
 
