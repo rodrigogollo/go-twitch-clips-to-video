@@ -150,7 +150,6 @@ func getClipsByGame(token string, gameId string, first int, startedAt string, en
 
 	clips := clipsResponse.Data
 	return clips
-
 }
 
 func filterClips(clips []Clip, language string, duration float64) []Clip {

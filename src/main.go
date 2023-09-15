@@ -44,12 +44,13 @@ func main() {
 }
 
 
-func downloadFileFromURL(path, name, url string) error{
+func downloadFileFromURL(path, name, url string) {
 	os.RemoveAll(path)
+	os.Mkdir(path, 0700)
 
 	resp, err := http.Get(url)
 	if err != nil {
-		return err
+		panic(err)
 	}
 
 	defer resp.Body.Close()
@@ -58,13 +59,16 @@ func downloadFileFromURL(path, name, url string) error{
 	out, err := os.Create(filepath)
 
 	if err != nil {
-		return err
+		panic(err)
 	}
 
 	size, err := io.Copy(out, resp.Body)
+	
+	if err != nil {
+		panic(err)
+	}
 
 	defer out.Close()
 
 	fmt.Printf("Downloaded a file %s with size %d\n", filepath, size)
-	return err
 }
