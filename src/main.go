@@ -22,32 +22,42 @@ func main() {
 	token := getTwitchToken()
 	fmt.Printf("Token Acquired: %s\n", token)
 
-	game := getGameByName(token, "dayz")
+	game := getGameByName(token, "league of legends")
 	fmt.Printf("Game ID: %s\n", game.ID)
 
-	clips := getClipsByGame(token, game.ID, 1, "2023-08-10", "2023-09-14")
+	clips := getClipsByGame(token, game.ID, 1, "2023-09-13", "2023-09-15")
 	filteredClips := filterClips(clips, "en", 10)
+
+	directory, err := os.Getwd()
+
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	path := directory + "/downloads/"
+
+	os.RemoveAll(path)
+	os.Mkdir(path, 0700)
 
 	for index, clip := range filteredClips {
 		fmt.Printf("Clip %d: %s\n", index, clip.URL)
 
-		directory, err := os.Getwd()
-		if err != nil {
-      fmt.Println(err) //print the error if obtained
-   }
-		downloadFileFromURL(fmt.Sprintf(`%s/%s`, directory, "downloads"), fmt.Sprintf("Clip%d.mp4", index), strings.Replace(clip.ThumbnailURL, "-preview-480x272.jpg", ".mp4", 1))
+	 	filename := fmt.Sprintf("Clip%d", index)	
+		downloadFileFromURL(path, filename, strings.Replace(clip.ThumbnailURL, "-preview-480x272.jpg", ".mp4", 1))
+	}
+
+	filterClipsPath := path + "/filtered"
+	os.RemoveAll(filterClipsPath)
+	os.Mkdir(filterClipsPath, 0700)
+
+	for index, clip := range filteredClips {
+		filename := fmt.Sprintf("Clip%d", index)	
+		addStreamerToClip(path, filename, clip)	
+	}
 }
-	
 
 
-	// makevideo("broadcast", "jerma985", "day", 10)
-}
-
-
-func downloadFileFromURL(path, name, url string) {
-	os.RemoveAll(path)
-	os.Mkdir(path, 0700)
-
+func downloadFileFromURL(path, filename, url string) {
 	resp, err := http.Get(url)
 	if err != nil {
 		panic(err)
@@ -55,8 +65,8 @@ func downloadFileFromURL(path, name, url string) {
 
 	defer resp.Body.Close()
 
-	filepath := fmt.Sprintf(`%s/%s`, path, name)
-	out, err := os.Create(filepath)
+	filepath := fmt.Sprintf(`%s/%s`, path, filename)
+	out, err := os.Create(filepath + ".mp4")
 
 	if err != nil {
 		panic(err)
