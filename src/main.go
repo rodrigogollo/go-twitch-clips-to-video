@@ -1,12 +1,15 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
 	"log"
 	"net/http"
 	"os"
 	"strings"
+	"sync"
+	"time"
 
 	"github.com/joho/godotenv"
 )
@@ -19,43 +22,89 @@ func init(){
 }
 
 func main() {
+
+	// gamename := "dayz"
+	// getClipsAndDownload(gamename, 50, 5)
+
+	wanted := []int{5, 4, 11,7, 10}
+	addFilterToWantedClips(wanted)
+
+	mergeClips("dayz", wanted)
+}
+
+func getClipsAndDownload(gamename string, size, days int) {
 	token := getTwitchToken()
 	fmt.Printf("Token Acquired: %s\n", token)
 
-	game := getGameByName(token, "league of legends")
-	fmt.Printf("Game ID: %s\n", game.ID)
+	game := getGameByName(token, gamename)
 
-	clips := getClipsByGame(token, game.ID, 1, "2023-09-13", "2023-09-15")
-	filteredClips := filterClips(clips, "en", 10)
+	dateEnd := time.Now().UTC()
+	dateStart := dateEnd.AddDate(0, 0, -days)
 
-	directory, err := os.Getwd()
+	clips := getClipsByGame(token, game.ID, size, dateStart.Format("2006-01-02"), dateEnd.Format("2006-01-02"))
+	filteredClips := filterClips(clips, "en", 25)
+	
+	jsonInfo, _ := json.Marshal(filteredClips)
+	os.WriteFile("output.json", jsonInfo, 0644)
 
-	if err != nil {
-		fmt.Println(err)
-	}
-
+	directory, _ := os.Getwd()
 	path := directory + "/downloads/"
 
 	os.RemoveAll(path)
 	os.Mkdir(path, 0700)
 
-	for index, clip := range filteredClips {
-		fmt.Printf("Clip %d: %s\n", index, clip.URL)
+	var wg sync.WaitGroup
 
-	 	filename := fmt.Sprintf("Clip%d", index)	
-		downloadFileFromURL(path, filename, strings.Replace(clip.ThumbnailURL, "-preview-480x272.jpg", ".mp4", 1))
+	wg.Add(len(filteredClips))
+	for index, clip := range filteredClips {
+	go func(i int, clip Clip){
+		defer wg.Done()
+			fmt.Printf("Clip %d: %s\n", i, clip.URL)
+	
+		 	filename := fmt.Sprintf("Clip%d", i)	
+			downloadFileFromURL(path, filename, strings.Replace(clip.ThumbnailURL, "-preview-480x272.jpg", ".mp4", 1))
+		}(index, clip)
 	}
+	wg.Wait()
+}
+
+func addFilterToWantedClips(wanted []int) {
+	file, err := os.ReadFile("output.json")
+
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	filteredClips := []Clip{}
+	err = json.Unmarshal([]byte(file), &filteredClips)
+
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	var slice []*Clip
+	for _, wantedClip := range wanted {
+		slice = append(slice, &filteredClips[wantedClip])
+	}
+
+	directory, _ := os.Getwd()
+	path := directory + "/downloads/"
 
 	filterClipsPath := path + "/filtered"
 	os.RemoveAll(filterClipsPath)
 	os.Mkdir(filterClipsPath, 0700)
 
-	for index, clip := range filteredClips {
-		filename := fmt.Sprintf("Clip%d", index)	
-		addStreamerToClip(path, filename, clip)	
+	var wg sync.WaitGroup
+	wg.Add(3)
+	for index, clip := range slice {
+	go func(i int, clip *Clip){
+		defer wg.Done()
+			filename := fmt.Sprintf("Clip%d", wanted[i])	
+			addStreamerToClip(path, filename, clip)	
+		}(index, clip)
 	}
+	wg.Wait()	
 }
-
 
 func downloadFileFromURL(path, filename, url string) {
 	resp, err := http.Get(url)

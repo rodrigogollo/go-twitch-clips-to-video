@@ -22,3 +22,6 @@ go.work
 
 .env
 downloads
+content
+output.json
+*.mp4

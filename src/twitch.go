@@ -156,7 +156,7 @@ func filterClips(clips []Clip, language string, duration float64) []Clip {
 	filteredClips := []Clip{}
 
 	for i := range clips {
-		if clips[i].Language == language  && clips[i].Duration >= duration {
+		if clips[i].Language == language  && clips[i].Duration >= duration && clips[i].BroadcasterName != "TheRunningManZ" {
 			filteredClips = append(filteredClips, clips[i])
 		}
 	}
