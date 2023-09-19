@@ -66,7 +66,7 @@ func mergeClips(channel string, wanted []int) {
 	streams = append(streams, ffmpeg.Input(outro).Audio())
 
   err := ffmpeg.Concat(streams, ffmpeg.KwArgs{"v": 1, "a": 1}).
-	Output("output.mp4", ffmpeg.KwArgs{"preset": "veryfast", "crf": "16", "vcodec": "libx264", "acodec": "aac", "ar": "48000"}).
+	Output("output.mp4", ffmpeg.KwArgs{"preset": "veryfast", "crf": "16", "vcodec": "libx264", "acodec": "aac", "ar": "48000", "r": "30"}).
 	OverWriteOutput().
 	ErrorToStdOut().
 	Run()

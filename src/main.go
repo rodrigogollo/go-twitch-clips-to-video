@@ -1,12 +1,14 @@
 package main
 
 import (
+	"bufio"
 	"encoding/json"
 	"fmt"
 	"io"
 	"log"
 	"net/http"
 	"os"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -23,13 +25,43 @@ func init(){
 
 func main() {
 
-	// gamename := "dayz"
-	// getClipsAndDownload(gamename, 50, 5)
+	reader := bufio.NewReader(os.Stdin)
+	
+	fmt.Print("Enter the game name: ")
+	gameName, _ := reader.ReadString('\n')
+	gameName = strings.TrimSpace(gameName)
 
-	wanted := []int{5, 4, 11,7, 10}
-	addFilterToWantedClips(wanted)
+	fmt.Print("Enter the size of clips: ")
+	clipSizeInput, _ := reader.ReadString('\n')
+	clipSizeInput = strings.TrimSpace(clipSizeInput)
 
-	mergeClips("dayz", wanted)
+	clipSize, err := strconv.Atoi(clipSizeInput)
+	if err != nil {
+		fmt.Println("Invalid input for clip size. Please enter a valid number.")
+		return
+	}
+
+	fmt.Print("Enter the number of days before today to search for clips: ")
+
+	daysInput, _ := reader.ReadString('\n')
+	daysInput = strings.TrimSpace(daysInput)
+
+	days, err := strconv.Atoi(daysInput)
+	if err != nil {
+		fmt.Println("Invalid input for clip size. Please enter a valid number.")
+		return
+	}
+
+	fmt.Printf("You entered the game name: %s\n", gameName)
+	fmt.Printf("You entered the clip size: %d\n", clipSize)
+	fmt.Printf("You entered the days before: %d\n", days)
+	fmt.Printf("Searching %d Twitch Clips for game %s in the last %d days.\n", clipSize, gameName, days)
+
+	getClipsAndDownload(gameName, clipSize, days)
+	
+	// wanted := []int{1, 4, 5, 8, 10}
+	// addFilterToWantedClips(wanted)
+	// mergeClips("dayz", wanted)
 }
 
 func getClipsAndDownload(gamename string, size, days int) {
@@ -95,7 +127,7 @@ func addFilterToWantedClips(wanted []int) {
 	os.Mkdir(filterClipsPath, 0700)
 
 	var wg sync.WaitGroup
-	wg.Add(3)
+	wg.Add(len(slice))
 	for index, clip := range slice {
 	go func(i int, clip *Clip){
 		defer wg.Done()
